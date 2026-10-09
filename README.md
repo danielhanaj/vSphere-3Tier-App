@@ -23,7 +23,7 @@ Key changes from upstream:
 
 ## What gets deployed (flat network)
 
-Five Photon OS VMs on **one** portgroup (for example `VM_Network`) in a single `/24`:
+Five Photon OS VMs on **one** portgroup (for example `MY_PORTGROUP`) in a single `/24`:
 
 | Tier    | VMs                                               | IPs (with `IPv4=192.168`, `SiteCode=0`) |
 | ------- | ------------------------------------------------- | --------------------------------------- |
@@ -107,14 +107,14 @@ Edit **`inventories/production/group_vars/all.yml`** and set:
 | `Common`             | `Domain`             | `corp.local`                       | DNS suffix used in `/etc/hosts` and generated cert SANs.                                      |
 | `Common.BaseNetwork` | `IPv4`               | `'192.168'`                        | First two octets of the flat `/24`.                                                           |
 | `Common.BaseNetwork` | `SubnetMask`         | `24`                               | Flat-network mask.                                                                            |
-| `Common.PortGroups`  | `app` / `db` / `web` | `"VM_Network"`                     | **Set all three to the SAME portgroup** — this is what makes it a flat network.               |
+| `Common.PortGroups`  | `app` / `db` / `web` | `"CHANGE_ME_PORTGROUP"`            | **Set all three to the SAME portgroup** — this is what makes it a flat network.               |
 | `Common.hostnames`   | `app` / `db` / `web` | `vpc-app-01b`, ...                 | VM names and hostnames (web is a 3-item list).                                                |
-| `Target.vCenter`     | `FQDN`               | `vcsa01.lab.local`                 | vCenter hostname.                                                                             |
+| `Target.vCenter`     | `FQDN`               | `vcenter.example.local`            | vCenter hostname.                                                                             |
 | `Target.vCenter`     | `User`               | `svc-ansible@vsphere.local`        | vCenter username.                                                                             |
 | `Target.vCenter`     | `Password`           | `"{{ Common.Password.Physical }}"` | Usually left referencing `Physical`.                                                          |
-| `Target.vCenter`     | `DataCenter`         | `DC01`                             | vCenter datacenter name.                                                                      |
-| `Target.vCenter`     | `Cluster`            | `CL01`                             | Compute cluster.                                                                              |
-| `Target.vCenter`     | `Datastore`          | `SATA-01`                          | Datastore for the VMs.                                                                        |
+| `Target.vCenter`     | `DataCenter`         | `YOUR_DATACENTER`                  | vCenter datacenter name.                                                                      |
+| `Target.vCenter`     | `Cluster`            | `YOUR_CLUSTER`                     | Compute cluster.                                                                              |
+| `Target.vCenter`     | `Datastore`          | `YOUR_DATASTORE`                   | Datastore for the VMs.                                                                        |
 | `Target.vCenter`     | `Folder`             | `"3-Tier-{{ NameSuffix }}"`        | Optional; defaults to `3-Tier-<NameSuffix>`.                                                  |
 
 Set the three `PortGroups` entries to the same value to run everything on one network. The
