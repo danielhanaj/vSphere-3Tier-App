@@ -160,8 +160,23 @@ cd ~/3-Tier-Apps
 5. Configures DB → App → Web via **VMware Guest Operations (no SSH)**
    (`playbooks/install_config_db.yml`, `install_config_app.yml`, `install_config_web.yml`).
 
-Access the app at `https://<web-ip>/cgi-bin/app.py` (the web tier also serves a stock page
-on port 80).
+### Accessing the deployed website
+
+Once the deploy finishes, the site is reachable through **each** web server (any of the
+three serves the app):
+
+- <https://192.168.0.17/cgi-bin/app.py>
+- <https://192.168.0.18/cgi-bin/app.py>
+- <https://192.168.0.19/cgi-bin/app.py>
+
+Notes:
+
+- Use **HTTPS** (`https://`). The certificate is self-signed, so the browser will show a
+  warning you must accept.
+- The IPs follow the flat-network scheme (`.17`, `.18`, `.19` for the three web VMs). If you
+  changed `Common.BaseNetwork.IPv4` / `Common.SiteCode`, substitute your own first octets.
+- `/cgi-bin/app.py` is the application UI. Browsing the root `https://<web-ip>/` shows a
+  stock web-server page, not the app.
 
 ## 4. Undeploy
 
@@ -194,10 +209,3 @@ installs and enables it during bootstrap.
 
 `inventories/production/group_vars/all.yml` holds passwords and is **gitignored**. Only
 `all.yml.template` (with `CHANGE_ME_*` placeholders) is committed. Do not commit the real file.
-
-## Credits
-
-- Forked from [vBrit/3-Tier-Apps](https://github.com/vBrit/3-Tier-Apps) (original author
-  Karl Newick).
-- Original also thanks [kwrobert](https://github.com/kwrobert) and
-  [doug-baer/hol-3-tier-app](https://github.com/doug-baer/hol-3-tier-app).
