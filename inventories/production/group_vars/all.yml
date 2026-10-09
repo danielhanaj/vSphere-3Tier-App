@@ -1,0 +1,36 @@
+NameSuffix: "b"                                       # One-letter/environment suffix (for example: a, b, c)
+                                                       # Used for hostnames, NSX segments, and default vCenter folder naming.
+                                                       # Keep this as a top-level variable (do not nest under Common).
+
+Common:
+  SiteCode: 0                                         # 3rd octet selector used by IP math in inventory templates
+  Password:
+    Physical: "CHANGE_ME_VCENTER_PASSWORD"            # Password for Target.vCenter.User
+    VMs: "CHANGE_ME_VM_ROOT_PASSWORD"                 # root password set inside the deployed VMs
+  DNS: "8.8.8.8"                                      # Resolver written into the guest network config
+  Domain: "corp.local"                                # DNS suffix used in hosts entries and generated cert SANs
+  BaseNetwork:
+    IPv4: '192.168'                                   # Base network prefix; final IPs are computed from SiteCode
+    SubnetMask: 24                                    # Flat-network mask
+  PortGroups:
+    app: "CHANGE_ME_PORTGROUP"                        # Single flat network/portgroup for all tiers
+    db: "CHANGE_ME_PORTGROUP"                         # Use the SAME portgroup name for app/db/web
+    web: "CHANGE_ME_PORTGROUP"
+  hostnames:
+    app: "vpc-app-01{{ NameSuffix }}"              # App VM name/hostname
+    db: "vpc-db-01{{ NameSuffix }}"                # DB VM name/hostname
+    web:                                            # Web VM names/hostnames (3-node web tier)
+      - "vpc-web-01{{ NameSuffix }}"
+      - "vpc-web-02{{ NameSuffix }}"
+      - "vpc-web-03{{ NameSuffix }}"
+Target:
+  vCenter:
+    FQDN: "vcenter.example.local"                   # FQDN/IP of your vCenter Server
+    User: "svc-ansible@vsphere.local"               # vCenter account used for deployment
+    Password: "{{ Common.Password.Physical }}"
+    DataCenter: "YOUR_DATACENTER"                   # vCenter Datacenter name
+    Cluster: "YOUR_CLUSTER"                         # vCenter compute cluster name
+    Datastore: "YOUR_DATASTORE"                     # vCenter datastore name
+    Folder: "3-Tier-{{ NameSuffix }}"               # Optional explicit folder. If omitted, deploy defaults to 3-Tier-<NameSuffix>
+
+ansible_python_interpreter: auto_silent

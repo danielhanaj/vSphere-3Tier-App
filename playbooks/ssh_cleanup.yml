@@ -1,0 +1,33 @@
+# I keep forgetting to remove the ssh keys from the know hosts so I just created this instead.
+---
+- hosts: 127.0.0.1
+  become: no
+  connection: local
+  tasks:
+    - name: Get current user
+      shell: whoami
+      register: current_user
+      changed_when: false
+    
+    - name: Ensure .ssh directory exists
+      file:
+        path: /home/{{ current_user.stdout }}/.ssh
+        state: directory
+        mode: '0700'
+    
+    - name: Ensure known_hosts file exists
+      file:
+        path: /home/{{ current_user.stdout }}/.ssh/known_hosts
+        state: touch
+        mode: '0600'
+    
+    - shell: ssh-keygen -f "/home/{{ current_user.stdout }}/.ssh/known_hosts" -R "{{Common.BaseNetwork.IPv4}}.{{Common.SiteCode}}.30"
+      ignore_errors: yes
+    - shell: ssh-keygen -f "/home/{{ current_user.stdout }}/.ssh/known_hosts" -R "{{Common.BaseNetwork.IPv4}}.{{Common.SiteCode}}.20"
+      ignore_errors: yes
+    - shell: ssh-keygen -f "/home/{{ current_user.stdout }}/.ssh/known_hosts" -R "{{Common.BaseNetwork.IPv4}}.{{Common.SiteCode}}.17"
+      ignore_errors: yes
+    - shell: ssh-keygen -f "/home/{{ current_user.stdout }}/.ssh/known_hosts" -R "{{Common.BaseNetwork.IPv4}}.{{Common.SiteCode}}.18"
+      ignore_errors: yes
+    - shell: ssh-keygen -f "/home/{{ current_user.stdout }}/.ssh/known_hosts" -R "{{Common.BaseNetwork.IPv4}}.{{Common.SiteCode}}.19"
+      ignore_errors: yes

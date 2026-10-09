@@ -1,0 +1,168 @@
+---
+- name: Render app CSR template locally
+  ansible.builtin.template:
+    src: templates/csr.j2
+    dest: "/tmp/{{ inventory_hostname }}-app.conf"
+  delegate_to: localhost
+
+- name: Generate app TLS certificate and key locally
+  ansible.builtin.command: >-
+    openssl req -x509 -nodes -days 1825 -newkey rsa:2048
+    -keyout /tmp/{{ inventory_hostname }}-app.key
+    -out /tmp/{{ inventory_hostname }}-app.pem
+    -config /tmp/{{ inventory_hostname }}-app.conf
+  delegate_to: localhost
+
+- name: Copy app TLS private key to guest
+  community.vmware.vmware_guest_file_operation:
+    hostname: "{{ Target.vCenter.FQDN }}"
+    username: "{{ Target.vCenter.User }}"
+    password: "{{ Common.Password.Physical }}"
+    datacenter: "{{ Target.vCenter.DataCenter }}"
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "{{ Common.Password.VMs }}"
+    copy:
+      src: "/tmp/{{ inventory_hostname }}-app.key"
+      dest: /etc/httpd/conf/server.key
+      overwrite: true
+    validate_certs: false
+  delegate_to: localhost
+
+- name: Copy app TLS certificate to guest
+  community.vmware.vmware_guest_file_operation:
+    hostname: "{{ Target.vCenter.FQDN }}"
+    username: "{{ Target.vCenter.User }}"
+    password: "{{ Common.Password.Physical }}"
+    datacenter: "{{ Target.vCenter.DataCenter }}"
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "{{ Common.Password.VMs }}"
+    copy:
+      src: "/tmp/{{ inventory_hostname }}-app.pem"
+      dest: /etc/httpd/conf/server.crt
+      overwrite: true
+    validate_certs: false
+  delegate_to: localhost
+
+- name: Copy app httpd.conf to guest
+  community.vmware.vmware_guest_file_operation:
+    hostname: "{{ Target.vCenter.FQDN }}"
+    username: "{{ Target.vCenter.User }}"
+    password: "{{ Common.Password.Physical }}"
+    datacenter: "{{ Target.vCenter.DataCenter }}"
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "{{ Common.Password.VMs }}"
+    copy:
+      src: "{{ role_path }}/files/httpd.conf"
+      dest: /etc/httpd/conf/httpd.conf
+      overwrite: true
+    validate_certs: false
+  delegate_to: localhost
+
+- name: Copy app httpd-ssl.conf to guest
+  community.vmware.vmware_guest_file_operation:
+    hostname: "{{ Target.vCenter.FQDN }}"
+    username: "{{ Target.vCenter.User }}"
+    password: "{{ Common.Password.Physical }}"
+    datacenter: "{{ Target.vCenter.DataCenter }}"
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "{{ Common.Password.VMs }}"
+    copy:
+      src: "{{ role_path }}/files/httpd-ssl.conf"
+      dest: /etc/httpd/conf/extra/httpd-ssl.conf
+      overwrite: true
+    validate_certs: false
+  delegate_to: localhost
+
+- name: Render app.py locally
+  ansible.builtin.template:
+    src: templates/app.j2
+    dest: "/tmp/{{ inventory_hostname }}-app.py"
+  delegate_to: localhost
+
+- name: Copy app.py to guest
+  community.vmware.vmware_guest_file_operation:
+    hostname: "{{ Target.vCenter.FQDN }}"
+    username: "{{ Target.vCenter.User }}"
+    password: "{{ Common.Password.Physical }}"
+    datacenter: "{{ Target.vCenter.DataCenter }}"
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "{{ Common.Password.VMs }}"
+    copy:
+      src: "/tmp/{{ inventory_hostname }}-app.py"
+      dest: /etc/httpd/cgi-bin/app.py
+      overwrite: true
+    validate_certs: false
+  delegate_to: localhost
+
+- name: Ensure app icon directory exists in guest
+  community.vmware.vmware_vm_shell:
+    hostname: "{{ Target.vCenter.FQDN }}"
+    username: "{{ Target.vCenter.User }}"
+    password: "{{ Common.Password.Physical }}"
+    datacenter: "{{ Target.vCenter.DataCenter }}"
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "{{ Common.Password.VMs }}"
+    vm_shell: "/bin/bash"
+    vm_shell_args: >-
+      -lc "mkdir -p /etc/httpd/html/icons"
+    wait_for_process: true
+    timeout: 1200
+    validate_certs: false
+  delegate_to: localhost
+
+- name: Copy planet icon assets to guest
+  community.vmware.vmware_guest_file_operation:
+    hostname: "{{ Target.vCenter.FQDN }}"
+    username: "{{ Target.vCenter.User }}"
+    password: "{{ Common.Password.Physical }}"
+    datacenter: "{{ Target.vCenter.DataCenter }}"
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "{{ Common.Password.VMs }}"
+    copy:
+      src: "{{ role_path }}/files/icons/{{ item }}"
+      dest: "/etc/httpd/html/icons/{{ item }}"
+      overwrite: true
+    validate_certs: false
+  loop:
+    - sun.png
+    - mercury.png
+    - venus.png
+    - earth.png
+    - mars.png
+    - jupiter.png
+    - saturn.png
+    - uranus.png
+    - neptune.png
+    - pluto_or_asteroid.png
+    - moon.png
+    - dwarf_or_planet.png
+  delegate_to: localhost
+
+- name: Fix app file permissions and start httpd in guest
+  community.vmware.vmware_vm_shell:
+    hostname: "{{ Target.vCenter.FQDN }}"
+    username: "{{ Target.vCenter.User }}"
+    password: "{{ Common.Password.Physical }}"
+    datacenter: "{{ Target.vCenter.DataCenter }}"
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "{{ Common.Password.VMs }}"
+    vm_shell: "/bin/bash"
+    vm_shell_args: >-
+      -lc "chmod 600 /etc/httpd/conf/server.key &&
+      chmod 644 /etc/httpd/conf/server.crt &&
+      chmod 755 /etc/httpd/cgi-bin/app.py &&
+      chmod 755 /etc/httpd/html/icons &&
+      chmod 644 /etc/httpd/html/icons/* &&
+      systemctl enable --now httpd"
+    wait_for_process: true
+    timeout: 1200
+    validate_certs: false
+  delegate_to: localhost

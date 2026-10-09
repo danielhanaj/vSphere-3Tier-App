@@ -1,0 +1,11 @@
+[Match]  
+Name=eth0    
+
+[Network]  
+Address={{ansible_host}}/24
+Gateway={{gateway}}
+DNS={{Common.DNS}}
+Domains={{ Common.Domain | default('corp.local') }}
+
+
+

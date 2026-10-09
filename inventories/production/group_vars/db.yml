@@ -1,0 +1,2 @@
+gateway: "{{Common.BaseNetwork.IPv4}}.{{Common.SiteCode}}.1"
+PortGroup: "{{ Common.PortGroups.db }}"

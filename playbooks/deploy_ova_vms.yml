@@ -1,0 +1,52 @@
+---
+- hosts: all
+  become: no
+  connection: local
+  gather_facts: False
+  vars:
+    vm_folder_name: "{{ Target.vCenter.Folder | default('3-Tier-' ~ (NameSuffix | default('a'))) }}"
+  pre_tasks:
+    - import_tasks: tasks/resolve_target_vm_name.yml
+  tasks:
+    - name: Ensure VM folder exists in vCenter
+      community.vmware.vcenter_folder:
+        hostname: "{{ Target.vCenter.FQDN }}"
+        username: "{{ Target.vCenter.User }}"
+        password: "{{ Common.Password.Physical }}"
+        validate_certs: no
+        datacenter_name: "{{ Target.vCenter.DataCenter }}"
+        folder_name: "{{ vm_folder_name }}"
+        folder_type: vm
+        state: present
+
+    - name: Deploy OVAs for Inventory Using Photon OS
+      community.vmware.vmware_deploy_ovf:
+        hostname: "{{ Target.vCenter.FQDN }}"
+        username: "{{ Target.vCenter.User }}"
+        password: "{{ Common.Password.Physical }}" 
+        validate_certs: no
+        name: "{{ inventory_hostname }}" 
+        datacenter: "{{ Target.vCenter.DataCenter }}"
+        folder: "/{{ Target.vCenter.DataCenter }}/vm/{{ vm_folder_name }}"
+        cluster: "{{ Target.vCenter.Cluster }}"
+        datastore: "{{ Target.vCenter.Datastore }}"
+        disk_provisioning: thin
+        networks: 
+          "None": "{{ PortGroup }}"
+        #ova: /Software/VMware/Photon/v1/photon-custom-hw11-1.0-62c543d.ova
+        #ova: /Software/VMware/Photon/v2/photon-custom-hw11-2.0-304b817.ova
+        #ova: /Software/VMware/Photon/v3/photon-hw11-3.0-a383732.ova
+        #ova: /Software/VMware/Photon/v4/photon-hw11-4.0-1526e30ba0.ova
+        # Photon OS OVA is stored in the ovas/ directory on the Ansible server
+        # NOTE: playbook_dir resolves to <repo>/playbooks (this file's dir) when
+        # imported from deploy.yml, so the repo root is its dirname
+        ova: "{{ playbook_dir | dirname }}/ovas/photon-hw15-5.0-dde71ec57.x86_64.ova"
+        allow_duplicates: no
+        power_on: yes
+        fail_on_spec_warnings: yes
+        wait: no
+    - name: Wait for Photon to boot
+      ansible.builtin.pause:
+        seconds: 30
+      run_once: true
+

@@ -1,0 +1,180 @@
+---
+# Check all requirements before deploying VMs
+- hosts: 127.0.0.1
+  become: no
+  connection: local
+  gather_facts: True
+  tasks:
+    - name: Display Python version
+      debug:
+        msg: "Python version: {{ ansible_python_version }}"
+
+    - name: Check Ansible version
+      debug:
+        msg: "Ansible version: {{ ansible_version.full }}"
+
+    - name: Check if sshpass is installed
+      shell: which sshpass
+      register: sshpass_check
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Result - sshpass
+      debug:
+        msg: "✓ sshpass is installed" 
+      when: sshpass_check.rc == 0
+
+    - name: Result - sshpass NOT installed
+      debug:
+        msg: "✗ sshpass is NOT installed - run: sudo apt-get install sshpass"
+      when: sshpass_check.rc != 0
+
+    - name: Check if git is installed
+      shell: which git
+      register: git_check
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Result - git
+      debug:
+        msg: "✓ git is installed"
+      when: git_check.rc == 0
+
+    - name: Result - git NOT installed
+      debug:
+        msg: "✗ git is NOT installed - run: sudo apt-get install git"
+      when: git_check.rc != 0
+
+    - name: Check if community.vmware collection is installed
+      shell: ansible-galaxy collection list | grep community.vmware
+      register: vmware_collection_check
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Result - community.vmware collection
+      debug:
+        msg: "✓ community.vmware collection is installed"
+      when: vmware_collection_check.rc == 0
+
+    - name: Result - community.vmware collection NOT installed
+      debug:
+        msg: "✗ community.vmware collection is NOT installed - run: ansible-galaxy collection install community.vmware"
+      when: vmware_collection_check.rc != 0
+
+    - name: Check if pyvmomi (PyVmomi/pyVim) is importable
+      shell: python3 -c "import pyVim, pyVmomi"
+      register: pyvmomi_check
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Result - pyvmomi
+      debug:
+        msg: "✓ pyvmomi is installed"
+      when: pyvmomi_check.rc == 0
+
+    - name: Result - pyvmomi NOT installed
+      debug:
+        msg: "✗ pyvmomi is NOT installed - run: pip3 install -r requirements.txt"
+      when: pyvmomi_check.rc != 0
+
+    - name: Check collections requirements file exists
+      stat:
+        path: collections/requirements.yml
+      register: collections_requirements_stat
+
+    - name: Result - collections requirements file
+      debug:
+        msg: "✓ collections/requirements.yml exists"
+      when: collections_requirements_stat.stat.exists
+
+    - name: Check Python requirements file exists
+      stat:
+        path: requirements.txt
+      register: python_requirements_stat
+
+    - name: Result - Python requirements file
+      debug:
+        msg: "✓ requirements.txt exists"
+      when: python_requirements_stat.stat.exists
+
+    - name: Check inventory file exists
+      stat:
+        path: inventories/production/inventory.yml
+      register: inventory_stat
+
+    - name: Result - inventory file
+      debug:
+        msg: "✓ Inventory file exists at inventories/production/inventory.yml"
+      when: inventory_stat.stat.exists
+
+    - name: Result - inventory file NOT found
+      debug:
+        msg: "✗ Inventory file NOT found at inventories/production/inventory.yml"
+      when: not inventory_stat.stat.exists
+
+    - name: Check group_vars all.yml exists
+      stat:
+        path: inventories/production/group_vars/all.yml
+      register: groupvars_stat
+
+    - name: Result - group_vars all.yml
+      debug:
+        msg: "✓ group_vars/all.yml exists"
+      when: groupvars_stat.stat.exists
+
+    - name: Result - group_vars all.yml NOT found
+      debug:
+        msg: "✗ group_vars/all.yml NOT found at inventories/production/group_vars/all.yml"
+      when: not groupvars_stat.stat.exists
+
+    - name: Load group_vars to check configuration
+      include_vars:
+        file: inventories/production/group_vars/all.yml
+      ignore_errors: yes
+
+    - name: Check required variables are configured
+      assert:
+        that:
+          - Common.SiteCode is defined
+          - Common.BaseNetwork.IPv4 is defined
+          - Target.vCenter.FQDN is defined
+          - Target.vCenter.User is defined
+          - Target.vCenter.DataCenter is defined
+          - Target.vCenter.Cluster is defined
+          - Target.vCenter.Datastore is defined
+          - Common.Password.Physical is defined
+          - Common.Password.VMs is defined
+        fail_msg: "One or more required variables are not configured in group_vars/all.yml"
+        success_msg: "✓ All required variables are configured"
+      ignore_errors: yes
+
+    - name: Display configured values
+      debug:
+        msg:
+          - "SiteCode: {{ Common.SiteCode }}"
+          - "Base Network IPv4: {{ Common.BaseNetwork.IPv4 }}"
+          - "vCenter FQDN: {{ Target.vCenter.FQDN }}"
+          - "vCenter User: {{ Target.vCenter.User }}"
+          - "vCenter DataCenter: {{ Target.vCenter.DataCenter }}"
+          - "vCenter Cluster: {{ Target.vCenter.Cluster }}"
+          - "vCenter Datastore: {{ Target.vCenter.Datastore }}"
+
+    - name: Check deploy_ova_vms.yml has Photon OVA path configured
+      shell: grep -E -c "ova:.*ovas/.*photon-hw" playbooks/deploy_ova_vms.yml
+      register: photon_check
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Result - Photon OVA configured
+      debug:
+        msg: "✓ Photon OVA path is configured in deploy_ova_vms.yml"
+      when: photon_check.rc == 0
+
+    - name: Result - Photon OVA NOT configured
+      debug:
+        msg: "✗ Photon OVA path may not be configured - check playbooks/deploy_ova_vms.yml"
+      when: photon_check.rc != 0
+
+    - name: Summary
+      debug:
+        msg: "Review the checks above to ensure all requirements are met before running deploy.yml"

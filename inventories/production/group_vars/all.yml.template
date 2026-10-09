@@ -1,0 +1,36 @@
+NameSuffix: "b"                                       # One-letter/environment suffix (for example: a, b, c)
+                                                       # Used for hostnames, NSX segments, and default vCenter folder naming.
+                                                       # Keep this as a top-level variable (do not nest under Common).
+
+Common:
+  SiteCode: 21                                        # 3rd octet selector used by IP math in inventory templates
+  Password:
+    Physical: "CHANGE_ME_VCENTER_PASSWORD"           # vCenter account password
+    VMs: "CHANGE_ME_VM_ROOT_PASSWORD"                # root password configured inside deployed VMs
+  DNS: "8.8.8.8"
+  Domain: "corp.local"                               # DNS suffix used in hosts entries and generated cert SANs
+  BaseNetwork:
+    IPv4: '10.225'                                    # Base network prefix; final IPs are computed from SiteCode
+    SubnetMask: 24
+  PortGroups:
+    app: "vpc-app-{{ NameSuffix }}"                 # NSX segment/portgroup for app VM
+    db: "vpc-db-{{ NameSuffix }}"                   # NSX segment/portgroup for db VM
+    web: "vpc-web-{{ NameSuffix }}"                 # NSX segment/portgroup for web VMs
+  hostnames:
+    app: "vpc-app-01{{ NameSuffix }}"              # App VM name/hostname
+    db: "vpc-db-01{{ NameSuffix }}"                # DB VM name/hostname
+    web:                                            # Web VM names/hostnames (3-node web tier)
+      - "vpc-web-01{{ NameSuffix }}"
+      - "vpc-web-02{{ NameSuffix }}"
+      - "vpc-web-03{{ NameSuffix }}"
+Target:
+  vCenter:
+    FQDN: vcenter.example.local                       # e.g. vcenter.lab.local
+    User: svc-ansible@vsphere.local                  # vCenter username
+    Password: "{{ Common.Password.Physical }}"
+    DataCenter: DC01
+    Cluster: Cluster01
+    Datastore: datastore01
+    Folder: "3-Tier-{{ NameSuffix }}"               # Optional explicit folder. If omitted, deploy defaults to 3-Tier-<NameSuffix>
+
+ansible_python_interpreter: auto_silent
