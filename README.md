@@ -194,10 +194,3 @@ installs and enables it during bootstrap.
 
 `inventories/production/group_vars/all.yml` holds passwords and is **gitignored**. Only
 `all.yml.template` (with `CHANGE_ME_*` placeholders) is committed. Do not commit the real file.
-
-## Credits
-
-- Forked from [vBrit/3-Tier-Apps](https://github.com/vBrit/3-Tier-Apps) (original author
-  Karl Newick).
-- Original also thanks [kwrobert](https://github.com/kwrobert) and
-  [doug-baer/hol-3-tier-app](https://github.com/doug-baer/hol-3-tier-app).
